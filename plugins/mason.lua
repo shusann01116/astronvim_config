@@ -13,6 +13,8 @@ return {
         "pyright",
         "taplo",
         "omnisharp",
+        "yamlls",
+        "dockerls",
       })
     end,
   },
@@ -26,6 +28,7 @@ return {
         "prettier",
         "stylua",
         "actionlint",
+        "hadolint",
       })
     end,
   },

@@ -9,6 +9,7 @@ return {
       "c_sharp",
       "yaml",
       "bash",
+      "dockerfile",
     })
   end,
 }
