@@ -63,4 +63,8 @@ return {
       return opts
     end,
   },
+  {
+    "Hoffs/omnisharp-extended-lsp.nvim",
+    event = "User AstroFile",
+  },
 }
