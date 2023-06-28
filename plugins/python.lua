@@ -25,9 +25,14 @@ return {
   },
   {
     "linux-cultist/venv-selector.nvim",
+    dependencies = {
+      "mfussenegger/nvim-dap-python",
+    },
     config = true,
     keys = { { "<leader>lv", "<cmd>:VenvSelect<cr>", desc = "Select VirtualEnv" } },
-    event = "User AstroFile",
+    opts = {
+      dap_enabled = true,
+    },
   },
   {
     "mfussenegger/nvim-dap-python",
@@ -35,6 +40,6 @@ return {
     -- NOTE: ft: lazy-load on filetype
     ft = "python",
     event = "User AstroFile",
-    config = function() require("dap-python").setup("python", {}) end,
+    config = function() require("dap-python").setup("python3", {}) end,
   },
 }
