@@ -1,16 +1,21 @@
+local fn = require "user.util.fn"
+local telescope = require "user.util.telescope"
+
 return {
   "mfussenegger/nvim-dap",
   enabled = true,
   dependencies = {
+    "linux-cultist/venv-selector.nvim",
     -- { "theHamsta/nvim-dap-virtual-text", config = true },
   },
   config = function()
     local dap = require "dap"
     local CODELLDB_DIR = require("mason-registry").get_package("codelldb"):get_install_path()
-        .. "/extension/adapter/codelldb"
-    local PYTHON_DIR = require("mason-registry").get_package("debugpy"):get_install_path() .. "/venv/Scripts/python"
+      .. "/extension/adapter/codelldb"
+    local PYTHON_DIR = require("mason-registry").get_package("debugpy"):get_install_path()
+      .. (require("venv-selector").get_active_path() and require("venv-selector").get_active_path() or "")
     local NODE_DIR = require("mason-registry").get_package("node-debug2-adapter"):get_install_path()
-        .. "/out/src/nodeDebug.js"
+      .. "/out/src/nodeDebug.js"
 
     dap.adapters.codelldb = {
       name = "codelldb",
@@ -45,15 +50,14 @@ return {
 
     dap.configurations.python = {
       {
-        name = "Launch file",
-        type = "py",         -- the type here established the link to the adapter definition: `dap.adapters.python`
+        name = "Launch file - Python",
+        type = "py", -- the type here established the link to the adapter definition: `dap.adapters.python`
         request = "launch",
         program = "${file}", -- This configuration will launch the current file if used.
       },
     }
 
     local function set_program()
-      local telescope = require "telescope"
       local function run_scene(prompt_bufnr, map)
         telescope.actions.select_default:replace(function()
           telescope.actions.close(prompt_bufnr)
