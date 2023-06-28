@@ -1,7 +1,4 @@
 return {
-  -- You can also add new plugins here as well:
-  -- Add plugins, the lazy syntax
-  -- "andweeb/presence.nvim",
   {
     "ray-x/lsp_signature.nvim",
     event = "BufRead",
@@ -49,10 +46,6 @@ return {
       end)
 
       opts.mapping["<C-down>"] = cmp.mapping(function()
-        if copilot.is_visible() then copilot.accept_line() end
-      end)
-
-      opts.mapping["<C-j>"] = cmp.mapping(function()
         if copilot.is_visible() then copilot.accept_line() end
       end)
 
