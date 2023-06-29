@@ -5,11 +5,19 @@ return {
   "mfussenegger/nvim-dap",
   enabled = true,
   dependencies = {
+    "catppuccin/nvim",
     "linux-cultist/venv-selector.nvim",
     -- { "theHamsta/nvim-dap-virtual-text", config = true },
   },
   config = function()
     local dap = require "dap"
+
+    -- cattpuccin integration
+    local sign = vim.fn.sign_define
+    sign("DapBreakpoint", { text = "●", texthl = "DapBreakpoint", linehl = "", numhl = "" })
+    sign("DapBreakpointCondition", { text = "●", texthl = "DapBreakpointCondition", linehl = "", numhl = "" })
+    sign("DapLogPoint", { text = "◆", texthl = "DapLogPoint", linehl = "", numhl = "" })
+
     local CODELLDB_DIR = require("mason-registry").get_package("codelldb"):get_install_path()
       .. "/extension/adapter/codelldb"
     local NODE_DIR = require("mason-registry").get_package("node-debug2-adapter"):get_install_path()

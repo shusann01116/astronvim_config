@@ -5,13 +5,23 @@ return {
   config = function()
     require("catppuccin").setup {
       integrations = {
+        aerial = true,
+        alpha = true,
         cmp = true,
+        dap = {
+          enabled = true,
+          enable_ui = true,
+        },
         gitsigns = true,
-        nvimtree = true,
-        telescope = true,
-        notify = true,
+        indent_blankline = true,
         leap = true,
+        markdown = true,
+        mason = true,
         mini = true,
+        neotree = true,
+        notify = true,
+        treesitter = true,
+        telescope = true,
       },
     }
   end,
