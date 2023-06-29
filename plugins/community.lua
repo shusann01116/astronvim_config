@@ -14,5 +14,4 @@ return {
   { import = "astrocommunity.pack.markdown" },
   { import = "astrocommunity.pack.terraform" },
   { import = "astrocommunity.pack.yaml" },
-  { import = "astrocommunity.syntax.vim-sandwich" },
 }
