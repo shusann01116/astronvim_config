@@ -7,7 +7,6 @@ return {
   dependencies = {
     "catppuccin/nvim",
     "linux-cultist/venv-selector.nvim",
-    -- { "theHamsta/nvim-dap-virtual-text", config = true },
   },
   config = function()
     local dap = require "dap"
@@ -19,9 +18,9 @@ return {
     sign("DapLogPoint", { text = "◆", texthl = "DapLogPoint", linehl = "", numhl = "" })
 
     local CODELLDB_DIR = require("mason-registry").get_package("codelldb"):get_install_path()
-      .. "/extension/adapter/codelldb"
+        .. "/extension/adapter/codelldb"
     local NODE_DIR = require("mason-registry").get_package("node-debug2-adapter"):get_install_path()
-      .. "/out/src/nodeDebug.js"
+        .. "/out/src/nodeDebug.js"
 
     dap.adapters.codelldb = {
       name = "codelldb",
@@ -38,11 +37,6 @@ return {
       type = "executable",
       command = "node",
       args = { NODE_DIR },
-    }
-    dap.adapters.coreclr = {
-      type = "executable",
-      command = "/usr/local/netcoredbg",
-      args = { "--interpreter=vscode" },
     }
 
     -- configurations --
@@ -88,15 +82,6 @@ return {
         type = "node",
         request = "attach",
         processId = require("dap.utils").pick_process,
-      },
-    }
-    dap.configurations.cs = {
-      {
-        type = "coreclr",
-        name = "launch - netcoredbg",
-        request = "launch",
-        -- TODO: Add a functionality to pick the project to debug
-        program = "${workspaceFolder}/bin/Debug/net7.0/${workspaceFolderBasename}.dll",
       },
     }
   end,
