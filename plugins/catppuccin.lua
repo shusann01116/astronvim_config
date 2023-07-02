@@ -13,7 +13,6 @@ return {
           enable_ui = true,
         },
         gitsigns = true,
-        indent_blankline = true,
         leap = true,
         markdown = true,
         mason = true,
