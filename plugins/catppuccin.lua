@@ -13,6 +13,10 @@ return {
           enable_ui = true,
         },
         gitsigns = true,
+        indent_blankline = {
+          enabled = true,
+          colored_indent_levels = false,
+        },
         leap = true,
         markdown = true,
         mason = true,
