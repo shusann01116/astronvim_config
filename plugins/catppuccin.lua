@@ -24,7 +24,10 @@ return {
         neotree = true,
         notify = true,
         treesitter = true,
-        telescope = true,
+        telescope = {
+          enabled = true,
+          style = "classic",
+        },
       },
     }
   end,
