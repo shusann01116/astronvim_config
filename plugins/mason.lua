@@ -1,5 +1,6 @@
+local os, arch = require "../util/get_os_name".get_os_name()
+
 local lspconfigs = {
-  "lua_ls",
   "gopls",
   "taplo",
   "omnisharp",
@@ -11,13 +12,11 @@ local lspconfigs = {
   "marksman",
   "pyright",
   "ruff_lsp",
-  "rust_analyzer",
   "terraformls",
   "yamlls",
 }
 local null_lss = {
   "prettierd",
-  "stylua",
   "actionlint",
   "hadolint",
   "shellcheck",
@@ -33,13 +32,19 @@ local null_lss = {
   "tfsec",
 }
 local daps = {
-  "codelldb",
   "python",
-  "coreclr",
   "bash",
   "dart",
   "delve",
 }
+
+if arch == "x86_64" or arch == "x86" then
+  table.insert(lspconfigs, "lua_ls")
+  table.insert(lspconfigs, "rust_analyzer")
+  table.insert(null_lss, "stylua")
+  table.insert(daps, "codelldb")
+  table.insert(daps, "coreclr")
+end
 
 -- customize mason plugins
 return {
