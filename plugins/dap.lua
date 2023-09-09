@@ -1,6 +1,3 @@
-local fn = require "user.util.fn"
-local telescope = require "user.util.telescope"
-
 return {
   "mfussenegger/nvim-dap",
   enabled = true,
