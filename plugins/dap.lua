@@ -16,8 +16,6 @@ return {
 
     local CODELLDB_DIR = require("mason-registry").get_package("codelldb"):get_install_path()
         .. "/extension/adapter/codelldb"
-    local NODE_DIR = require("mason-registry").get_package("node-debug2-adapter"):get_install_path()
-        .. "/out/src/nodeDebug.js"
 
     dap.adapters.codelldb = {
       name = "codelldb",
@@ -30,14 +28,8 @@ return {
       },
       detatched = false,
     }
-    dap.adapters.node = {
-      type = "executable",
-      command = "node",
-      args = { NODE_DIR },
-    }
 
     -- configurations --
-
     local lldb = {
       name = "Launch",
       type = "codelldb",
