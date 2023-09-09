@@ -6,7 +6,6 @@ local lspconfigs = {
   "yamlls",
   "dockerls",
   "bashls",
-  "dartls",
   "gopls",
   "jsonls",
   "marksman",
@@ -36,7 +35,7 @@ local null_lss = {
 local daps = {
   "codelldb",
   "python",
-  "netcoredbg",
+  "coreclr",
   "bash",
   "dart",
   "delve",
