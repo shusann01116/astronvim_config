@@ -1,4 +1,4 @@
-local os, arch = require "../util/get_os_name".get_os_name()
+local os, arch = require("user.util.get_os_name").get_os_name()
 
 local lspconfigs = {
   "gopls",
@@ -48,16 +48,11 @@ end
 
 -- customize mason plugins
 return {
-  vim.api.nvim_create_user_command(
-    "MasonInstallAll",
-    function()
-      vim.cmd("LspInstall " .. table.concat(lspconfigs, " "))
-      vim.cmd("NullLsInstall " .. table.concat(null_lss, " "))
-      vim.cmd("DapInstall " .. table.concat(daps, " "))
-    end,
-    {}
-  ),
-  -- use mason-lspconfig to configure LSP installations
+  vim.api.nvim_create_user_command("MasonInstallAll", function()
+    vim.cmd("LspInstall " .. table.concat(lspconfigs, " "))
+    vim.cmd("NullLsInstall " .. table.concat(null_lss, " "))
+    vim.cmd("DapInstall " .. table.concat(daps, " "))
+  end, {}), -- use mason-lspconfig to configure LSP installations
   {
     "williamboman/mason-lspconfig.nvim",
     -- overrides `require("mason-lspconfig").setup(...)`
