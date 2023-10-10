@@ -81,5 +81,11 @@ return {
     --     ["~/%.config/foo/.*"] = "fooscript",
     --   },
     -- }
+    -- Set additional filetypes
+    vim.filetype.add({
+      extension = {
+        tfvars = "terraform"
+      }
+    })
   end,
 }
