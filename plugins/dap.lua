@@ -14,8 +14,9 @@ return {
     sign("DapBreakpointCondition", { text = "●", texthl = "DapBreakpointCondition", linehl = "", numhl = "" })
     sign("DapLogPoint", { text = "◆", texthl = "DapLogPoint", linehl = "", numhl = "" })
 
-    local CODELLDB_DIR = require("mason-registry").get_package("codelldb"):get_install_path()
-        .. "/extension/adapter/codelldb"
+    local registry = require "mason-registry"
+    if not registry.is_installed "codelldb" then vim.cmd "MasonInstall codelldb" end
+    local CODELLDB_DIR = registry.get_package("codelldb"):get_install_path() .. "/extension/adapter/codelldb"
 
     dap.adapters.codelldb = {
       name = "codelldb",
