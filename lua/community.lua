@@ -7,6 +7,7 @@ return {
 	"AstroNvim/astrocommunity",
 	{ import = "astrocommunity.colorscheme.kanagawa-nvim" },
 	{ import = "astrocommunity.completion.avante-nvim" },
+	{ import = "astrocommunity.completion.copilot-cmp" },
 	{ import = "astrocommunity.colorscheme.catppuccin" },
 	{ import = "astrocommunity.git.octo-nvim" },
 	{ import = "astrocommunity.motion.leap-nvim" },
@@ -16,6 +17,7 @@ return {
 	{ import = "astrocommunity.pack.golangci-lint" },
 	{ import = "astrocommunity.pack.markdown" },
 	{ import = "astrocommunity.pack.mdx" },
+	{ import = "astrocommunity.pack.proto" },
 	{ import = "astrocommunity.pack.toml" },
 	{ import = "astrocommunity.pack.yaml" },
 	{ import = "astrocommunity.pack.tailwindcss" },
@@ -23,7 +25,6 @@ return {
 	{ import = "astrocommunity.pack.rust" },
 	{ import = "astrocommunity.pack.python" },
 	{ import = "astrocommunity.markdown-and-latex.markdown-preview-nvim" },
-	{ import = "astrocommunity.recipes.ai" },
 	{ import = "astrocommunity.recipes.vscode" },
 	{ import = "astrocommunity.recipes.picker-lsp-mappings" },
 }
