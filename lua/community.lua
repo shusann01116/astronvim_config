@@ -23,5 +23,7 @@ return {
 	{ import = "astrocommunity.pack.rust" },
 	{ import = "astrocommunity.pack.python" },
 	{ import = "astrocommunity.markdown-and-latex.markdown-preview-nvim" },
+	{ import = "astrocommunity.recipes.ai" },
+	{ import = "astrocommunity.recipes.vscode" },
 	{ import = "astrocommunity.recipes.picker-lsp-mappings" },
 }
