@@ -6,7 +6,6 @@
 return {
 	"AstroNvim/astrocommunity",
 	{ import = "astrocommunity.colorscheme.kanagawa-nvim" },
-	{ import = "astrocommunity.completion.avante-nvim" },
 	{ import = "astrocommunity.completion.copilot-lua" },
 	{ import = "astrocommunity.colorscheme.catppuccin" },
 	{ import = "astrocommunity.git.octo-nvim" },
