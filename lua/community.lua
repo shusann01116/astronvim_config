@@ -18,7 +18,6 @@ return {
 	{ import = "astrocommunity.pack.golangci-lint" },
 	{ import = "astrocommunity.pack.markdown" },
 	{ import = "astrocommunity.pack.mdx" },
-	{ import = "astrocommunity.pack.prettier" },
 	{ import = "astrocommunity.pack.proto" },
 	{ import = "astrocommunity.pack.toml" },
 	{ import = "astrocommunity.pack.yaml" },
