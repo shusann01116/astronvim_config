@@ -9,7 +9,7 @@ return {
 	{ import = "astrocommunity.colorscheme.kanagawa-nvim" },
 	{ import = "astrocommunity.completion.copilot-lua" },
 	{ import = "astrocommunity.colorscheme.catppuccin" },
-	{ import = "astrocommunity.motion.leap-nvim" },
+	{ import = "astrocommunity.motion.flash-nvim" },
 	-- { import = "astrocommunity.pack.biome" },
 	{ import = "astrocommunity.pack.eslint" },
 	{ import = "astrocommunity.pack.lua" },
