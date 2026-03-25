@@ -53,6 +53,19 @@ return {
 					"<cmd>ClaudeCodeSend<cr>",
 					desc = "Send selection",
 				}
+				maps.v["<Leader>y"] = {
+					function()
+						local path = vim.fn.expand("%:.")
+						local v_line = vim.fn.line("v")
+						local cur_line = vim.fn.line(".")
+						local start_line = math.min(v_line, cur_line)
+						local end_line = math.max(v_line, cur_line)
+						local result = start_line == end_line and ("%s:%d"):format(path, start_line)
+							or ("%s:%d-%d"):format(path, start_line, end_line)
+						vim.fn.setreg("+", result)
+					end,
+					desc = "Yank file location",
+				}
 			end,
 		},
 		{ "AstroNvim/astroui", opts = { icons = { ClaudeCode = "" } } },
