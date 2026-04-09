@@ -15,7 +15,9 @@ return {
 				},
 			},
 			oxlint = {
-				root_dir = require("lspconfig.util").root_pattern("package.json", ".oxlintrc.json"),
+				root_dir = function(bufnr)
+					return vim.fs.root(bufnr, { "package.json", ".oxlintrc.json" })
+				end,
 			},
 		})
 	end,
