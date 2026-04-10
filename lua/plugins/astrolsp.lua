@@ -14,11 +14,6 @@ return {
 					classFunctions = { "cva", "cx" },
 				},
 			},
-			oxlint = {
-				root_dir = function(bufnr)
-					return vim.fs.root(bufnr, { "package.json", ".oxlintrc.json" })
-				end,
-			},
 		})
 	end,
 }

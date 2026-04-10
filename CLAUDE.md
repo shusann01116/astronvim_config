@@ -25,7 +25,7 @@
 
 - **lazy-lock.json**: Must be committed — it pins all plugin versions.
 - **Formatter logic** (none-ls.lua): JS/TS uses oxfmt when `.oxfmtrc.json(c)` exists in project, prettierd otherwise. Other filetypes always use prettierd. Both use `runtime_condition` to switch at runtime.
-- **oxlint**: Registered as LSP server in `astrolsp.lua`, NOT as a none-ls source. `none-ls.lua` has a no-op handler to suppress auto-registration.
+- **oxlint**: Registered as LSP server in `astrolsp.lua`, NOT as a none-ls source. `none-ls.lua` has a no-op handler to suppress auto-registration. Root detection uses nvim-lspconfig default `root_markers` (`.oxlintrc.json`, `.oxlintrc.jsonc`, `oxlint.config.ts`).
 - **LSP formatting disabled** for: vtsls, oxlint (in `astrolsp.lua`).
 - **Mason** (`mason.lua`): Uses `mason-tool-installer.nvim`, not `mason-lspconfig`. Add tools to `ensure_installed` there.
 
