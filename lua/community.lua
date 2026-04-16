@@ -24,7 +24,7 @@ return {
 	{ import = "astrocommunity.pack.typescript" },
 	{ import = "astrocommunity.pack.rust" },
 	{ import = "astrocommunity.pack.python" },
-	{ import = "astrocommunity.markdown-and-latex.markdown-preview-nvim" },
+	{ import = "astrocommunity.markdown-and-latex.markview-nvim" },
 	{ import = "astrocommunity.recipes.vscode" },
 	{ import = "astrocommunity.recipes.picker-lsp-mappings" },
 	{ import = "astrocommunity.test.vim-test" },
