@@ -10,6 +10,8 @@ return {
       n = {
         ["<C-e>"] = { "6<C-e>" },
         ["<C-y>"] = { "6<C-y>" },
+        ["zt"] = { "zt6<C-y>", noremap = true, desc = "Top with margin" },
+        ["zb"] = { "zb6<C-e>", noremap = true, desc = "Bottom with margin" },
       },
     },
   },
