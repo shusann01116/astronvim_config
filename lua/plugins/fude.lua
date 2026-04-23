@@ -1,7 +1,9 @@
 ---@type LazySpec
 return {
 	"flexphere/fude.nvim",
-	opts = {},
+	opts = {
+		file_list_mode = "snacks",
+	},
 	cmd = {
 		"FudeReviewStart",
 		"FudeReviewStop",
