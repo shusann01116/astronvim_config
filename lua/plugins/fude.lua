@@ -25,6 +25,7 @@ return {
 		"FudeReviewUnviewed",
 		"FudeReviewReload",
 		"FudeCreatePR",
+		"FudeReviewPanel",
 	},
 	specs = {
 		{
@@ -60,6 +61,7 @@ return {
 				maps.n[prefix .. "M"] = { "<cmd>FudeReviewUnviewed<cr>", desc = "Unmark viewed" }
 				maps.n[prefix .. "p"] = { "<cmd>FudeReviewSubmit<cr>", desc = "Submit review" }
 				maps.n[prefix .. "P"] = { "<cmd>FudeCreatePR<cr>", desc = "Create PR" }
+				maps.n[prefix .. "n"] = { "<cmd>FudeReviewPanel<cr>", desc = "Toggle side panel" }
 
 				-- Visual mode mappings
 				maps.v[prefix] = { desc = require("astroui").get_icon("Fude", 1, true) .. "Fude Review" }
