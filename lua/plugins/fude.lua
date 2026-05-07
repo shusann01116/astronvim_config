@@ -26,6 +26,8 @@ return {
 		"FudeReviewReload",
 		"FudeCreatePR",
 		"FudeReviewPanel",
+		"FudeReviewNextFile",
+		"FudeReviewPrevFile",
 	},
 	specs = {
 		{
@@ -62,6 +64,8 @@ return {
 				maps.n[prefix .. "p"] = { "<cmd>FudeReviewSubmit<cr>", desc = "Submit review" }
 				maps.n[prefix .. "P"] = { "<cmd>FudeCreatePR<cr>", desc = "Create PR" }
 				maps.n[prefix .. "n"] = { "<cmd>FudeReviewPanel<cr>", desc = "Toggle side panel" }
+				maps.n[prefix .. "j"] = { "<cmd>FudeReviewNextFile<cr>", desc = "Next file" }
+				maps.n[prefix .. "k"] = { "<cmd>FudeReviewPrevFile<cr>", desc = "Prev file" }
 
 				-- Visual mode mappings
 				maps.v[prefix] = { desc = require("astroui").get_icon("Fude", 1, true) .. "Fude Review" }
