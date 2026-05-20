@@ -4,58 +4,6 @@ return {
 	---@param opts AstroCoreOpts
 	opts = function(_, opts)
 		local astrocore = require("astrocore")
-
-		-- AppleScript that locates an existing Chrome tab on localhost:6275 and
-		-- navigates it to the target URL. Falls back to opening a new tab inside
-		-- Chrome if none was found. Returns one of: "reused" / "opened" /
-		-- "no-chrome" / errors out on timeout (caller falls back to vim.ui.open).
-		local chrome_script = [[
-on run argv
-	set targetURL to item 1 of argv
-	with timeout of 2 seconds
-		tell application "System Events"
-			if not (exists process "Google Chrome") then return "no-chrome"
-		end tell
-		tell application "Google Chrome"
-			repeat with w in windows
-				set tabList to tabs of w
-				repeat with i from 1 to count of tabList
-					if (URL of (item i of tabList)) starts with "http://localhost:6275" then
-						set URL of (item i of tabList) to targetURL
-						set active tab index of w to i
-						set index of w to 1
-						activate
-						return "reused"
-					end if
-				end repeat
-			end repeat
-			open location targetURL
-			activate
-			return "opened"
-		end tell
-	end timeout
-end run
-]]
-
-		---Open url in Chrome by reusing any existing localhost:6275 tab. Falls
-		---back to vim.ui.open (default browser, new tab) when AppleScript fails
-		---(timeout, permission denied, Chrome not running, etc.).
-		local function open_url(url)
-			vim.system(
-				{ "osascript", "-e", chrome_script, url },
-				{ text = true, timeout = 3000 },
-				function(result)
-					local out = result.stdout or ""
-					if result.code == 0 and not out:find("no-chrome") then
-						return
-					end
-					vim.schedule(function()
-						vim.ui.open(url)
-					end)
-				end
-			)
-		end
-
 		opts.autocmds = astrocore.extend_tbl(opts.autocmds or {}, {
 			markdown_preview = {
 				{
@@ -102,7 +50,9 @@ end run
 										end)
 										return
 									end
-									open_url(url)
+									vim.schedule(function()
+										vim.ui.open(url)
+									end)
 								end
 							)
 						end, { buffer = args.buf, desc = "Preview with mo" })
