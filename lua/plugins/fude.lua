@@ -4,6 +4,23 @@ return {
 	opts = {
 		file_list_mode = "snacks",
 	},
+	config = function(_, opts)
+		require("fude").setup(opts)
+
+		-- preview バッファは buflisted=false のため heirline の winbar が無効化され、
+		-- source 側 (winbar あり) と 1 行高さがずれる。preview_win に空 winbar を
+		-- 強制してペインの上端を揃える。heirline は winbar 値が自身の式と一致した
+		-- 場合のみリセットするので " " は sticky になる。
+		local preview = require("fude.preview")
+		local original_open = preview.open_preview
+		preview.open_preview = function(source_win)
+			original_open(source_win)
+			vim.schedule(function()
+				local pwin = require("fude.config").state.preview_win
+				if pwin and vim.api.nvim_win_is_valid(pwin) then vim.wo[pwin].winbar = " " end
+			end)
+		end
+	end,
 	cmd = {
 		"FudeReviewStart",
 		"FudeReviewStop",
