@@ -29,11 +29,14 @@ Status: Approved
 ## アーキテクチャ
 
 新規ファイル `lua/plugins/markdown.lua` を作成し、AstroCore の `opts.autocmds` を拡張する形で
-`FileType markdown` 時に buffer-local キーマップを登録する。
+`FileType markdown` 時に buffer-local キーマップを登録する。ブラウザ起動部分は AppleScript を
+使い既存タブの再利用を試み、失敗時は `vim.ui.open` にフォールバックする。
 
 ```
 lua/plugins/markdown.lua
 └── { "AstroNvim/astrocore", opts = function(_, opts) ... end }
+    ├── chrome_script (AppleScript 文字列): 既存 Chrome タブ再利用ロジック
+    ├── open_url(url): osascript 呼び出し + フォールバック
     └── opts.autocmds.markdown_preview
         └── FileType=markdown autocmd
             └── buffer-local keymap <Leader>mp
@@ -43,7 +46,7 @@ lua/plugins/markdown.lua
                 └─ 成功コールバック内:
                     ├─ vim.json.decode(stdout) で JSON パース
                     ├─ data.files から path == 自分のパスのエントリを検索
-                    └─ そのエントリの url を vim.ui.open で開く
+                    └─ open_url(entry.url) でブラウザ起動（AppleScript 経由 or fallback）
 ```
 
 ### URL 設計（mo の `--json` から URL を取得）
@@ -61,20 +64,48 @@ lua/plugins/markdown.lua
 }
 ```
 
-各ファイルは独自の `?file=<id>` クエリパラメータ付き URL を持っており、`mo` 内部で生成・管理される
-（私たちが target 名やハッシュを自前で組み立てる必要はない）。これによって以下を達成する:
+各ファイルは独自の `?file=<id>` クエリパラメータ付き URL を持っており、`mo` 内部で生成・管理される。
+これによって以下を達成する:
 
 - **正しいファイル表示**: 各ファイルの URL は `mo` が一意に発行するため、別ファイルが default group
   の最後表示に引っ張られて表示されない
-- **既存ウィンドウ再利用**: macOS の `open URL`（`vim.ui.open` の実体）は同じ URL の既存ブラウザ
-  タブをフォアグラウンドに持ってくる挙動を持つ。`mo` が発行する URL はファイルパスに対して安定なので、
-  同じファイルを再度プレビューすると新タブを開かず既存タブを再利用する
-- **`mo` 内蔵ブラウザ起動の抑制**: `--no-open` で `mo` 側の自動ブラウザ起動を止め、`vim.ui.open`
-  に一元化する
-- **race condition 回避**: `vim.ui.open` を `vim.system` の **成功コールバック内** で呼ぶ。
-  `mo` がファイル登録を完了してからブラウザに URL を渡す
+- **`mo` 内蔵ブラウザ起動の抑制**: `--no-open` で `mo` 側の自動ブラウザ起動を止め、ブラウザ起動は
+  プラグインで一元的に制御する
 - **ファイルパス照合**: `data.files[i].path` と渡したパスの完全一致で対象 URL を選ぶ。
   `mo` は引数で渡したパス文字列をそのまま保存するため、シンボリックリンク解決などは不要
+
+### ブラウザ起動戦略（既存タブの再利用）
+
+macOS の `open URL`（および `vim.ui.open` の実体）は同じ URL であっても Chrome 等の主要ブラウザでは
+**毎回新規タブを開く**。これでは `<Leader>mp` を連打する度にタブが増えてしまう。
+
+そこで **AppleScript で Chrome のタブを直接制御** し、既存の `http://localhost:6275/*` タブを
+検出してそのタブを新 URL に navigate する。具体的なフロー:
+
+1. `osascript -e <script> <url>` を `vim.system` で呼ぶ（タイムアウト 3 秒）
+2. AppleScript 内 (`with timeout of 2 seconds`):
+   - System Events で Chrome プロセス存在チェック → 無ければ `"no-chrome"` を返す
+   - 全 Chrome ウィンドウの全タブを列挙、URL が `http://localhost:6275` で始まる最初のタブを探す
+   - 見つかったら: URL を新 URL に書き換え、そのタブを active にし、ウィンドウを foreground に
+     して Chrome を `activate` → `"reused"` を返す
+   - 見つからなかったら: `open location <url>` で Chrome に新タブを開かせて `activate` →
+     `"opened"` を返す
+3. AppleScript が `code == 0` かつ `stdout != "no-chrome"` なら成功とみなす
+4. 上記以外（Automation 権限なし / タイムアウト / Chrome 不在）は **`vim.ui.open(url)` にフォールバック**
+
+### 権限要件と graceful degradation
+
+AppleScript で Chrome を制御するには macOS の Automation 権限が必要（System Settings →
+Privacy & Security → Automation → Terminal 等 → Google Chrome をオン）。初回の osascript 呼び出しで
+権限プロンプトが出る。
+
+- **権限あり + Chrome 起動中**: 既存タブ再利用 → 完全に要求を満たす
+- **権限なし / 拒否**: AppleScript がタイムアウト/エラー → `vim.ui.open` にフォールバック
+  （新タブが開く。以前の挙動と同等）
+- **Chrome 未起動**: `"no-chrome"` 検出 → `vim.ui.open` で OS デフォルトブラウザで開く
+
+ユーザーが Chrome 以外のブラウザをデフォルトに設定している場合も、フォールバックの `vim.ui.open` が
+OS デフォルトを使うので機能する（タブ再利用は得られないが previewは開く）。
 
 ## コンポーネント
 
@@ -91,6 +122,54 @@ lua/plugins/markdown.lua
 - 名前: `<Leader>mp`（markdown preview）
 - スコープ: buffer-local（markdown filetype のみ）
 - desc: `"Preview with mo"`（which-key に表示される）
+
+### AppleScript と open_url 関数
+
+```lua
+local chrome_script = [[
+on run argv
+	set targetURL to item 1 of argv
+	with timeout of 2 seconds
+		tell application "System Events"
+			if not (exists process "Google Chrome") then return "no-chrome"
+		end tell
+		tell application "Google Chrome"
+			repeat with w in windows
+				set tabList to tabs of w
+				repeat with i from 1 to count of tabList
+					if (URL of (item i of tabList)) starts with "http://localhost:6275" then
+						set URL of (item i of tabList) to targetURL
+						set active tab index of w to i
+						set index of w to 1
+						activate
+						return "reused"
+					end if
+				end repeat
+			end repeat
+			open location targetURL
+			activate
+			return "opened"
+		end tell
+	end timeout
+end run
+]]
+
+local function open_url(url)
+  vim.system(
+    { "osascript", "-e", chrome_script, url },
+    { text = true, timeout = 3000 },
+    function(result)
+      local out = result.stdout or ""
+      if result.code == 0 and not out:find("no-chrome") then
+        return  -- Chrome reused or opened a tab successfully
+      end
+      vim.schedule(function()
+        vim.ui.open(url)  -- fallback: default browser, new tab
+      end)
+    end
+  )
+end
+```
 
 ### プレビュー関数
 
@@ -128,15 +207,13 @@ local function preview_with_mo()
       end)
       return
     end
-    vim.schedule(function()
-      vim.ui.open(url)
-    end)
+    open_url(url)
   end)
 end
 ```
 
 非同期コールバックを使う理由: `mo` が即時 return するとはいえ Neovim の UI スレッドをブロックしないため。
-さらに `vim.ui.open` をコールバック内に置くことで、`mo` のファイル登録完了後にブラウザを開ける。
+さらに `open_url` をコールバック内に置くことで、`mo` のファイル登録完了後にブラウザを開ける。
 
 ## データフロー
 
@@ -144,21 +221,26 @@ end
 2. `vim.fn.expand("%:p")` で絶対パスを取得
 3. パスが空（無名 buffer）なら警告して終了
 4. `vim.system` で `mo --no-open --json <path>` をバックグラウンド実行
-5. **成功コールバック内で**:
+5. **mo の成功コールバック内で**:
    - `vim.json.decode(result.stdout)` で JSON パース
    - `data.files` をループし `f.path == path` のエントリを探して `f.url` を取得
-   - `vim.ui.open(url)` でブラウザを開く（同じ URL の既存タブがあれば macOS の `open` がフォーカス）
-6. エラー時のみ `vim.notify(ERROR)` で通知（mo 実行失敗 / JSON 不正 / ファイル未登録）
+   - `open_url(url)` を呼ぶ
+6. **`open_url` 内部**:
+   - `osascript -e <chrome_script> <url>` を `vim.system` で非同期実行（timeout 3 秒）
+   - 成功（`code == 0` かつ stdout が `no-chrome` を含まない）→ 完了
+   - 失敗 → `vim.schedule(function() vim.ui.open(url) end)` でフォールバック
+7. エラー時のみ `vim.notify(ERROR)` で通知（mo 実行失敗 / JSON 不正 / ファイル未登録）
 
 ## エラーハンドリング
 
-| 状況                       | ハンドリング                                                                              |
-| -------------------------- | ----------------------------------------------------------------------------------------- |
-| 無名 buffer（未保存）      | `vim.notify("No file to preview", WARN)` で中断                                           |
-| `mo` 非インストール / 実行失敗 | `result.code ~= 0` で ERROR 通知（`stderr` の内容を含める）                            |
-| JSON パース失敗            | `pcall(vim.json.decode, ...)` で防御、不正な形式なら ERROR 通知                           |
-| 渡したパスが files にない | （通常起こらないが） ERROR 通知。`mo` が path を正規化してしまった場合の保険              |
-| `vim.ui.open` 失敗         | macOS デフォルトでは通常成功するため明示的なチェックは省略                                |
+| 状況                              | ハンドリング                                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| 無名 buffer（未保存）             | `vim.notify("No file to preview", WARN)` で中断                                         |
+| `mo` 非インストール / 実行失敗    | `result.code ~= 0` で ERROR 通知（`stderr` の内容を含める）                             |
+| JSON パース失敗                   | `pcall(vim.json.decode, ...)` で防御、不正な形式なら ERROR 通知                         |
+| 渡したパスが files にない         | （通常起こらないが） ERROR 通知。`mo` が path を正規化してしまった場合の保険            |
+| Chrome 未起動 / Automation 権限なし / AppleScript タイムアウト | `open_url` が自動で `vim.ui.open` にフォールバック         |
+| `vim.ui.open` 失敗                | macOS デフォルトでは通常成功するため明示的なチェックは省略                              |
 
 ## テスト
 
