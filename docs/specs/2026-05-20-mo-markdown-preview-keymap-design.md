@@ -39,9 +39,25 @@ lua/plugins/markdown.lua
             └── buffer-local keymap <Leader>mp
                 ├─ vim.fn.expand("%:p") でフルパス取得
                 ├─ 空パスなら vim.notify(WARN) で中断
-                ├─ vim.system({ "mo", path }) でサーバ登録（非同期）
-                └─ vim.ui.open("http://localhost:6275/") でブラウザ起動
+                ├─ target = vim.fn.sha256(path):sub(1,12) — ファイルごとに一意で安定
+                ├─ vim.system({ "mo", "--target", target, "--no-open", path }) でサーバ登録（非同期）
+                └─ 成功コールバック内で vim.ui.open("http://localhost:6275/<target>")
 ```
+
+### URL 設計（ファイルごとの一意 URL）
+
+`mo` の `--target` フラグは URL パスセグメントになる（例: `http://localhost:6275/abc123def456`）。
+ファイルパスの SHA-256 ハッシュ先頭 12 文字を target に使うことで以下を達成する:
+
+- **正しいファイル表示**: 各ファイルが独立した URL を持つため、別ファイルが default group の最後表示
+  に引っ張られて表示されない
+- **既存ウィンドウ再利用**: macOS の `open URL`（`vim.ui.open` の実体）は同じ URL の既存ブラウザ
+  タブをフォアグラウンドに持ってくる挙動を持つ。同じファイルを再度プレビューすると新タブを開かず
+  既存タブを再利用する
+- **`mo` 内蔵ブラウザ起動の抑制**: `--no-open` で `mo` 側の自動ブラウザ起動を止め、`vim.ui.open`
+  に一元化する。これによって URL とブラウザ起動タイミングを完全に制御できる
+- **race condition 回避**: `vim.ui.open` を `vim.system` の **成功コールバック内** で呼ぶ。
+  `mo` がファイル登録を完了してからブラウザに URL を渡す
 
 ## コンポーネント
 
@@ -68,31 +84,36 @@ local function preview_with_mo()
     vim.notify("No file to preview", vim.log.levels.WARN)
     return
   end
-  vim.system({ "mo", path }, { text = true }, function(result)
+  local target = vim.fn.sha256(path):sub(1, 12)
+  local url = "http://localhost:6275/" .. target
+  vim.system({ "mo", "--target", target, "--no-open", path }, { text = true }, function(result)
     if result.code ~= 0 then
       vim.schedule(function()
         vim.notify("mo failed: " .. (result.stderr or ""), vim.log.levels.ERROR)
       end)
       return
     end
+    vim.schedule(function()
+      vim.ui.open(url)
+    end)
   end)
-  vim.ui.open("http://localhost:6275/")
 end
 ```
 
 非同期コールバックを使う理由: `mo` が即時 return するとはいえ Neovim の UI スレッドをブロックしないため。
+さらに `vim.ui.open` をコールバック内に置くことで、`mo` のファイル登録完了後にブラウザを開ける。
 
 ## データフロー
 
 1. ユーザが Markdown buffer で `<Leader>mp` を押す
 2. `vim.fn.expand("%:p")` で絶対パスを取得
 3. パスが空（無名 buffer）なら警告して終了
-4. `vim.system` で `mo <path>` をバックグラウンド実行
-5. 並行して `vim.ui.open("http://localhost:6275/")` でブラウザを開く
-6. `mo` のサーバ登録結果は非同期コールバックで受け取り、失敗時のみ通知
-
-ステップ 4 と 5 は並列実行する。`mo` 登録完了を待たずにブラウザを開いても、
-サーバが既に走っていればそのまま、走っていなくても `mo` 起動後に live-reload で反映される。
+4. `vim.fn.sha256(path):sub(1, 12)` で安定した target 名を計算
+5. `vim.system` で `mo --target <hash> --no-open <path>` をバックグラウンド実行
+6. **成功コールバック内で** `vim.ui.open("http://localhost:6275/<hash>")` を呼ぶ
+   - 同じファイルなら同じ URL → macOS の `open` が既存ブラウザタブを再利用
+   - 別ファイルなら別 URL → 新規タブで開く（ただし default group との競合は起きない）
+7. `mo` 実行失敗時のみ `vim.notify(ERROR)` で通知
 
 ## エラーハンドリング
 
@@ -106,8 +127,10 @@ end
 
 手動確認のみ（Neovim 設定の単体テストは現状このリポジトリに存在しない）。
 
-- [ ] Markdown buffer で `<Leader>mp` を押すとブラウザが http://localhost:6275/ を開く
+- [ ] Markdown buffer で `<Leader>mp` を押すとブラウザが `http://localhost:6275/<hash>` を開く
 - [ ] サーバが起動していなくても初回押下でサーバが起動しブラウザが表示される
+- [ ] 別の md ファイルが既に開かれていても、`<Leader>mp` を押したファイルが表示される
+- [ ] 同じファイルで `<Leader>mp` を 2 回押すと新タブが増えず既存タブが再利用される
 - [ ] 無名 buffer で押すと警告が出て何も起こらない
 - [ ] Lua filetype など他のバッファでは `<Leader>mp` が未定義のまま（衝突しない）
 - [ ] which-key に `mp Preview with mo` が表示される

@@ -17,17 +17,26 @@ return {
 								vim.notify("No file to preview", vim.log.levels.WARN)
 								return
 							end
-							vim.system({ "mo", path }, { text = true }, function(result)
-								if result.code ~= 0 then
+							local target = vim.fn.sha256(path):sub(1, 12)
+							local url = "http://localhost:6275/" .. target
+							vim.system(
+								{ "mo", "--target", target, "--no-open", path },
+								{ text = true },
+								function(result)
+									if result.code ~= 0 then
+										vim.schedule(function()
+											vim.notify(
+												"mo failed: " .. (result.stderr or ""),
+												vim.log.levels.ERROR
+											)
+										end)
+										return
+									end
 									vim.schedule(function()
-										vim.notify(
-											"mo failed: " .. (result.stderr or ""),
-											vim.log.levels.ERROR
-										)
+										vim.ui.open(url)
 									end)
 								end
-							end)
-							vim.ui.open("http://localhost:6275/")
+							)
 						end, { buffer = args.buf, desc = "Preview with mo" })
 					end,
 				},
