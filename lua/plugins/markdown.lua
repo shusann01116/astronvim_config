@@ -17,10 +17,8 @@ return {
 								vim.notify("No file to preview", vim.log.levels.WARN)
 								return
 							end
-							local target = vim.fn.sha256(path):sub(1, 12)
-							local url = "http://localhost:6275/" .. target
 							vim.system(
-								{ "mo", "--target", target, "--no-open", path },
+								{ "mo", "--no-open", "--json", path },
 								{ text = true },
 								function(result)
 									if result.code ~= 0 then
@@ -29,6 +27,26 @@ return {
 												"mo failed: " .. (result.stderr or ""),
 												vim.log.levels.ERROR
 											)
+										end)
+										return
+									end
+									local ok, data = pcall(vim.json.decode, result.stdout)
+									if not ok or type(data) ~= "table" or type(data.files) ~= "table" then
+										vim.schedule(function()
+											vim.notify("mo returned unexpected JSON", vim.log.levels.ERROR)
+										end)
+										return
+									end
+									local url
+									for _, f in ipairs(data.files) do
+										if f.path == path then
+											url = f.url
+											break
+										end
+									end
+									if not url then
+										vim.schedule(function()
+											vim.notify("mo did not register the file", vim.log.levels.ERROR)
 										end)
 										return
 									end

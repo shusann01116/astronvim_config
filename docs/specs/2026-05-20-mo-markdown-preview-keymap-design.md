@@ -39,25 +39,42 @@ lua/plugins/markdown.lua
             └── buffer-local keymap <Leader>mp
                 ├─ vim.fn.expand("%:p") でフルパス取得
                 ├─ 空パスなら vim.notify(WARN) で中断
-                ├─ target = vim.fn.sha256(path):sub(1,12) — ファイルごとに一意で安定
-                ├─ vim.system({ "mo", "--target", target, "--no-open", path }) でサーバ登録（非同期）
-                └─ 成功コールバック内で vim.ui.open("http://localhost:6275/<target>")
+                ├─ vim.system({ "mo", "--no-open", "--json", path }) でファイル登録（非同期）
+                └─ 成功コールバック内:
+                    ├─ vim.json.decode(stdout) で JSON パース
+                    ├─ data.files から path == 自分のパスのエントリを検索
+                    └─ そのエントリの url を vim.ui.open で開く
 ```
 
-### URL 設計（ファイルごとの一意 URL）
+### URL 設計（mo の `--json` から URL を取得）
 
-`mo` の `--target` フラグは URL パスセグメントになる（例: `http://localhost:6275/abc123def456`）。
-ファイルパスの SHA-256 ハッシュ先頭 12 文字を target に使うことで以下を達成する:
+`mo` は `--json` フラグで全登録ファイルとそれぞれの URL を構造化データで返す。
+出力例:
 
-- **正しいファイル表示**: 各ファイルが独立した URL を持つため、別ファイルが default group の最後表示
-  に引っ張られて表示されない
+```json
+{
+  "url": "http://localhost:6275",
+  "files": [
+    { "url": "http://localhost:6275/?file=7c36eda8", "path": "/tmp/a.md", "name": "a.md" },
+    { "url": "http://localhost:6275/?file=38be63a0", "path": "/tmp/b.md", "name": "b.md" }
+  ]
+}
+```
+
+各ファイルは独自の `?file=<id>` クエリパラメータ付き URL を持っており、`mo` 内部で生成・管理される
+（私たちが target 名やハッシュを自前で組み立てる必要はない）。これによって以下を達成する:
+
+- **正しいファイル表示**: 各ファイルの URL は `mo` が一意に発行するため、別ファイルが default group
+  の最後表示に引っ張られて表示されない
 - **既存ウィンドウ再利用**: macOS の `open URL`（`vim.ui.open` の実体）は同じ URL の既存ブラウザ
-  タブをフォアグラウンドに持ってくる挙動を持つ。同じファイルを再度プレビューすると新タブを開かず
-  既存タブを再利用する
+  タブをフォアグラウンドに持ってくる挙動を持つ。`mo` が発行する URL はファイルパスに対して安定なので、
+  同じファイルを再度プレビューすると新タブを開かず既存タブを再利用する
 - **`mo` 内蔵ブラウザ起動の抑制**: `--no-open` で `mo` 側の自動ブラウザ起動を止め、`vim.ui.open`
-  に一元化する。これによって URL とブラウザ起動タイミングを完全に制御できる
+  に一元化する
 - **race condition 回避**: `vim.ui.open` を `vim.system` の **成功コールバック内** で呼ぶ。
   `mo` がファイル登録を完了してからブラウザに URL を渡す
+- **ファイルパス照合**: `data.files[i].path` と渡したパスの完全一致で対象 URL を選ぶ。
+  `mo` は引数で渡したパス文字列をそのまま保存するため、シンボリックリンク解決などは不要
 
 ## コンポーネント
 
@@ -84,12 +101,30 @@ local function preview_with_mo()
     vim.notify("No file to preview", vim.log.levels.WARN)
     return
   end
-  local target = vim.fn.sha256(path):sub(1, 12)
-  local url = "http://localhost:6275/" .. target
-  vim.system({ "mo", "--target", target, "--no-open", path }, { text = true }, function(result)
+  vim.system({ "mo", "--no-open", "--json", path }, { text = true }, function(result)
     if result.code ~= 0 then
       vim.schedule(function()
         vim.notify("mo failed: " .. (result.stderr or ""), vim.log.levels.ERROR)
+      end)
+      return
+    end
+    local ok, data = pcall(vim.json.decode, result.stdout)
+    if not ok or type(data) ~= "table" or type(data.files) ~= "table" then
+      vim.schedule(function()
+        vim.notify("mo returned unexpected JSON", vim.log.levels.ERROR)
+      end)
+      return
+    end
+    local url
+    for _, f in ipairs(data.files) do
+      if f.path == path then
+        url = f.url
+        break
+      end
+    end
+    if not url then
+      vim.schedule(function()
+        vim.notify("mo did not register the file", vim.log.levels.ERROR)
       end)
       return
     end
@@ -108,20 +143,22 @@ end
 1. ユーザが Markdown buffer で `<Leader>mp` を押す
 2. `vim.fn.expand("%:p")` で絶対パスを取得
 3. パスが空（無名 buffer）なら警告して終了
-4. `vim.fn.sha256(path):sub(1, 12)` で安定した target 名を計算
-5. `vim.system` で `mo --target <hash> --no-open <path>` をバックグラウンド実行
-6. **成功コールバック内で** `vim.ui.open("http://localhost:6275/<hash>")` を呼ぶ
-   - 同じファイルなら同じ URL → macOS の `open` が既存ブラウザタブを再利用
-   - 別ファイルなら別 URL → 新規タブで開く（ただし default group との競合は起きない）
-7. `mo` 実行失敗時のみ `vim.notify(ERROR)` で通知
+4. `vim.system` で `mo --no-open --json <path>` をバックグラウンド実行
+5. **成功コールバック内で**:
+   - `vim.json.decode(result.stdout)` で JSON パース
+   - `data.files` をループし `f.path == path` のエントリを探して `f.url` を取得
+   - `vim.ui.open(url)` でブラウザを開く（同じ URL の既存タブがあれば macOS の `open` がフォーカス）
+6. エラー時のみ `vim.notify(ERROR)` で通知（mo 実行失敗 / JSON 不正 / ファイル未登録）
 
 ## エラーハンドリング
 
-| 状況                  | ハンドリング                                                             |
-| --------------------- | ------------------------------------------------------------------------ |
-| 無名 buffer（未保存） | `vim.notify("No file to preview", WARN)` で中断                          |
-| `mo` 非インストール   | `vim.system` のコールバックで `result.code ~= 0` 判定し ERROR 通知       |
-| `vim.ui.open` 失敗    | 戻り値の error を確認、失敗時のみ通知（macOS デフォルトでは通常成功）    |
+| 状況                       | ハンドリング                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| 無名 buffer（未保存）      | `vim.notify("No file to preview", WARN)` で中断                                           |
+| `mo` 非インストール / 実行失敗 | `result.code ~= 0` で ERROR 通知（`stderr` の内容を含める）                            |
+| JSON パース失敗            | `pcall(vim.json.decode, ...)` で防御、不正な形式なら ERROR 通知                           |
+| 渡したパスが files にない | （通常起こらないが） ERROR 通知。`mo` が path を正規化してしまった場合の保険              |
+| `vim.ui.open` 失敗         | macOS デフォルトでは通常成功するため明示的なチェックは省略                                |
 
 ## テスト
 
@@ -150,6 +187,12 @@ end
 ### C. `vim.system` を同期 `:wait()` する
 
 UI スレッドが一瞬ブロックされる。非同期コールバック方式のほうが安全。
+
+### D. URL を自前で組み立てる（`--target` + SHA-256 ハッシュ）
+
+ファイルパスのハッシュを `--target` に渡して `http://localhost:6275/<hash>` を組み立てる案を一度検討した。
+これは機能するが、`mo --json` が既にファイルごとの URL を返してくれるため、車輪の再発明だった。
+URL の生成責任を `mo` 側に任せることで、`mo` 内部の URL スキーム変更にも追従しやすい。除外。
 
 ## 実装ファイル
 
