@@ -112,7 +112,7 @@ return {
 		-- Visual mode mappings
 		maps.v["<Leader>z"] = { desc = "herdr" }
 		maps.v["<Leader>zl"] = {
-			function() send_path { vim.fn.line "'<", vim.fn.line "'>" } end,
+			function() send_path { vim.fn.line "v", vim.fn.line "." } end,
 			desc = "Send file path + line range to herdr agent",
 		}
 	end,
