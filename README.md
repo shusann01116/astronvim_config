@@ -1,3 +1,6 @@
+> **⚠️ Archived:** This repository is no longer maintained here. The config now
+> lives at [shusann01116/dotfiles](https://github.com/shusann01116/dotfiles/tree/main/package/astronvim_config).
+
 # AstroNvim Template
 
 **NOTE:** This is for AstroNvim v5+
